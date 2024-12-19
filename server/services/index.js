@@ -1,8 +1,6 @@
-import { signup, verifyOTP } from "./user.js";
+import UserServices from "./user.js";
 
-const Services = { 
-    signup, 
-    verifyOTP
+
+export {
+    UserServices
 }
-
-export default Services

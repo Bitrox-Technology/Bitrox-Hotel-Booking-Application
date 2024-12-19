@@ -4,28 +4,27 @@ const adminSchema = new mongoose.Schema(
     {
         firstName: { type: String, default: "", trim: true },
         lastName: { type: String, default: "", trim: true },
-        email: { type: String, trim: true, default: "" },
-        countryCode: { type: String, trim: true },
-        phoneNumber: { type: String, trim: true },
+        email: { type: String, trim: true, default: "", unique: true ,  lowercase: true  },
+        countryCode: { type: String, trim: true, default: ""},
+        phoneNumber: { type: String, trim: true, default: "" },
         avtar: {type: String, trim: true},
         location: {type: String, default: ""}, 
         role: {
             type: String,
             enum: ["ADMIN", "USER", ""],
-            default: "",
+            default: "ADMIN",
         },
         password: {
             type: String,
             select: false,
         },
-        
-
-        isProfileComplete: { type: Boolean, default: false },
+        permissions:{
+            type: String, default: ['manage_users', 'manage_hosts', 'manage_properties']
+        },
         isEmailVerify: { type: Boolean, default: false },
         isPhoneVerify: { type: Boolean, default: false },
         isDeleted: { type: Boolean, default: false },
-        ProfileCompleteAt: { type: Date, default: null },
-
+        refreshToken: { type: String }
     },
     {
         timestamps: true,
@@ -35,6 +34,4 @@ const adminSchema = new mongoose.Schema(
 )
 
 const Admin = mongoose.model("Admin", adminSchema)
-export {
-    Admin
-}
+export default Admin;

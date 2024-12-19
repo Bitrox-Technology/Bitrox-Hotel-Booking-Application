@@ -2,8 +2,14 @@
     "INVALID_CREDENTIALS": "Invalid Credentials",
     "DUPLICATE_EMAIL": "Email already register",
     "DUPLICATE_PHONE": "Phone already register",
-    "OTP_SEND_SUCCESS": "OTP sent successfully",
     "INVALID_OTP": "Invalid OTP",
     "INVALID_PHONE": "Phone does't exist",
-    "SERVER_ERROR": "Server Error"
+    "INVALID_EMAIL": "Email does't exist",
+    "SERVER_ERROR": "Server Error",
+    
+    
+    
+    "OTP_SEND_SUCCESS": "OTP sent successfully",
+    "OTP_VERIFY": "OTP verify successfully",
+    "OTP_RESEND": "OTP resend successfully"
 }

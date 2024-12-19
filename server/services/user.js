@@ -103,12 +103,39 @@ const verifyOTP = async (inputs) => {
     user.type = "Bearer";
     user.refreshToken = refreshToken;
 
-    return user
-
-
+    return user;
 }
 
-export {
+const resendOTP = async(inputs) => {
+    let user;
+    if (Utils.isEmail(inputs.email)){
+      user = await User.findOne({email: inputs.email, isDeleted: false})
+
+      if (user) {
+        await generateOTPForEmail(inputs.email)
+      }else {
+        throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL") )
+      }
+
+    }else {
+        user = await User.findOne({
+            phone: inputs.phone,
+            countryCode: inputs.countryCode,
+            isDeleted: false,
+        })
+        if (user){
+            await generateOTPForPhone(inputs.countryCode, inputs.phone)
+        }else {
+            throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PHONE"))
+        }
+    }
+    return user;
+}
+
+
+const UserServices = {
     signup,
-    verifyOTP
+    verifyOTP,
+    resendOTP
 }
+export default UserServices

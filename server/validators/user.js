@@ -48,11 +48,28 @@ const validateVerifyOTP = async (inputs) => {
     }
 }
 
+const validateResendOTP = async (inputs) => {
+    let schema = {}
+    schema = Joi.object().keys({
+       email: joi.string().email().optional(),
+       countryCode: joi.string().optional(),
+       phone: joi.string().optional()
+
+    })
+    try {
+        await schema.validateAsync(inputs, { abortEarly: false });
+    } catch (validationError) {
+        const errorMessage = validationError.details ? validationError.details.map(detail => detail.message).join(', ') : i18n.__('INVALID_CREDENTIALS');
+        throw new ApiError(BAD_REQUEST, errorMessage);
+    }
+}
+
 
 const User= {
     validateSignupForEmail,
     validateVerifyOTP,
-    validateSignupForPhone
+    validateSignupForPhone,
+    validateResendOTP
 }
 export default User;
     
