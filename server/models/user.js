@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
         lastName: { type: String, default: "", trim: true },
         email: { type: String, trim: true, default: "", unique: true,  lowercase: true  },
         countryCode: { type: String, trim: true },
-        phoneNumber: { type: String, trim: true },
+        phone: { type: String, trim: true },
         location: { type: String, default: "" },
         role: {
             type: String,
@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
         isPhoneVerify: { type: Boolean, default: false },
         isDeleted: { type: Boolean, default: false },
         ProfileCompleteAt: { type: Date, default: null },
-        refreshToken: { type: String }
+        refreshToken: { type: String, select: false}
 
     },
     {

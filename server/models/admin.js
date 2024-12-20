@@ -4,9 +4,9 @@ const adminSchema = new mongoose.Schema(
     {
         firstName: { type: String, default: "", trim: true },
         lastName: { type: String, default: "", trim: true },
-        email: { type: String, trim: true, default: "", unique: true ,  lowercase: true  },
+        email: { type: String, trim: true, unique: true ,  lowercase: true  },
         countryCode: { type: String, trim: true, default: ""},
-        phoneNumber: { type: String, trim: true, default: "" },
+        phone: { type: String, trim: true, default: "" },
         avtar: {type: String, trim: true},
         location: {type: String, default: ""}, 
         role: {
@@ -24,9 +24,15 @@ const adminSchema = new mongoose.Schema(
         isEmailVerify: { type: Boolean, default: false },
         isPhoneVerify: { type: Boolean, default: false },
         isDeleted: { type: Boolean, default: false },
-        refreshToken: { type: String }
+        isBlocked: {type: Boolean, default: false},
+        totalUsers: {type: Number, default: 0},
+        totalRevenue: {type: Number, default: 0},
+        totalEarning: {type: Number, default: 0},
+        totalHotels: { type: Number, default: 0},
+
+        refreshToken: { type: String, select: false}
     },
-    {
+    { 
         timestamps: true,
         toJSON: { virtuals: true },
         toObject: { virtuals: true },

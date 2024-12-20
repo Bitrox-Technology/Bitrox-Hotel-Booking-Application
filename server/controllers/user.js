@@ -1,4 +1,6 @@
-import { UserServices } from "../services/index.js"
+import UserServices from "../services/user.js"
+import { ApiResponse } from "../utils/apiResponse.js"
+import { OK } from "../utils/responseCode.js"
 import { User } from "../validators/index.js"
 
 const Signup = async (req, res, next) => {
@@ -40,12 +42,66 @@ const ResendOTP = async(req, res, next) => {
   }
 }
 
+const UpdateProfile = async(req, res, next) => {
+  try{
+     await User.validateUpdateProfile(req.body);
+     let user = await UserServices.updateProfile(req.body)
+     return res.status(OK).json(new ApiResponse(OK, user, i18n.__("PROFILE_UPDATE")))
+  }catch(error){
+    next(error)
+  }
+}
+
+const Login = async(req, res, next) => {
+  try {
+     await User.validateLogin(req.body)
+     let user = await UserServices.login(req.body)
+     return res.status(OK).json(new ApiResponse(OK, user, i18n.__("USER_LOGIN")))
+  } catch (error) {
+    next(error)
+  }
+}
+
+const GetProfile = async(req, res, next)=> {
+  try {
+    let user = await UserServices.getProfile(req.user)
+    return res.status(OK).json(new ApiResponse(OK, user, i18n.__("PROFILE_FETCHED")))
+  } catch (error) {
+    next(error)
+  }
+}
+
+
+
+const ForgetPassword = async(req, res, next) => {
+  try {
+     let user = await UserServices.forgetPassword(req.body)
+     return res.status(OK).json(new ApiResponse(OK, user, i18n.__("OTP_SEND_SUCCESS")))
+  } catch (error) {
+    next(error)
+  }
+}
+
+const Logout = async(req, res, next) => {
+  try {
+     let user = await UserServices.logout(req.user)
+     return res.status(OK).json(new ApiResponse(OK, user, i18n.__("USER_LOGOUT")))
+  } catch (error) {
+    next(error)
+  }
+}
+
 
 
 const UserControllers = {
   Signup,
   VerifyOTP,
-  ResendOTP
+  ResendOTP,
+  UpdateProfile,
+  Login,
+  ForgetPassword,
+  GetProfile,
+  Logout
 }
 
 export default UserControllers

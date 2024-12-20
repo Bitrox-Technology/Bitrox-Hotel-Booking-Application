@@ -37,7 +37,7 @@ const validateVerifyOTP = async (inputs) => {
        email: joi.string().email().optional(),
        otp: joi.string().required(),
        countryCode: joi.string().optional(),
-       phone: joi.string().optional()
+       phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional()
 
     })
     try {
@@ -53,7 +53,43 @@ const validateResendOTP = async (inputs) => {
     schema = Joi.object().keys({
        email: joi.string().email().optional(),
        countryCode: joi.string().optional(),
-       phone: joi.string().optional()
+       phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional()
+
+    })
+    try {
+        await schema.validateAsync(inputs, { abortEarly: false });
+    } catch (validationError) {
+        const errorMessage = validationError.details ? validationError.details.map(detail => detail.message).join(', ') : i18n.__('INVALID_CREDENTIALS');
+        throw new ApiError(BAD_REQUEST, errorMessage);
+    }
+}
+
+const validateLogin = async (inputs) => {
+    let schema = {}
+    schema = Joi.object().keys({
+       email: joi.string().email().allow("", null).optional(),
+       countryCode: joi.string().allow("", null).optional(),
+       phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional()
+
+    })
+    try {
+        await schema.validateAsync(inputs, { abortEarly: false });
+    } catch (validationError) {
+        const errorMessage = validationError.details ? validationError.details.map(detail => detail.message).join(', ') : i18n.__('INVALID_CREDENTIALS');
+        throw new ApiError(BAD_REQUEST, errorMessage);
+    }
+}
+
+const validateUpdateProfile = async (inputs) => {
+    let schema = {}
+    schema = Joi.object().keys({
+       firstName: joi.string().optional(),
+       lastName: joi.string().optional(),
+       email: joi.string().email().optional(),
+       countryCode: joi.string().optional(),
+       phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional(),
+       avatar: joi.string().optional(),
+       location: joi.string().optional(),
 
     })
     try {
@@ -69,7 +105,9 @@ const User= {
     validateSignupForEmail,
     validateVerifyOTP,
     validateSignupForPhone,
-    validateResendOTP
+    validateResendOTP,
+    validateLogin,
+    validateUpdateProfile
 }
 export default User;
     

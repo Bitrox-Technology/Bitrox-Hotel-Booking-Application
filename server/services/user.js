@@ -1,8 +1,9 @@
 import { User } from "../models/user.js";
 import { ApiError } from "../utils/apiError.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generateOTPForEmail, generateOTPForPhone, verifyEmailOTP, verifyOtp } from "../utils/functions.js";
 import { generateAccessAndRefreshToken } from "../utils/generateTokens.js";
-import { BAD_REQUEST } from "../utils/responseCode.js";
+import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../utils/responseCode.js";
 import Utils from "../utils/utilities.js";
 
 const signup = async (inputs) => {
@@ -93,11 +94,11 @@ const verifyOTP = async (inputs) => {
         subObj.isPhoneVerify = true
     }
 
-    const {accessToken, refreshToken} = generateAccessAndRefreshToken(user._id)
+    const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id)
     subObj.refreshToken = refreshToken
-    user = await User.findByIdAndUpdate({_id: user._id}, subObj).lean()
+    user = await User.findByIdAndUpdate({ _id: user._id }, subObj).lean()
 
-    user = await User.findById({_id: user._id}).lean()
+    user = await User.findById({ _id: user._id }).lean()
 
     user.accessToken = accessToken;
     user.type = "Bearer";
@@ -106,36 +107,131 @@ const verifyOTP = async (inputs) => {
     return user;
 }
 
-const resendOTP = async(inputs) => {
+const resendOTP = async (inputs) => {
     let user;
-    if (Utils.isEmail(inputs.email)){
-      user = await User.findOne({email: inputs.email, isDeleted: false})
+    if (Utils.isEmail(inputs.email)) {
+        user = await User.findOne({ email: inputs.email, isDeleted: false })
 
-      if (user) {
-        await generateOTPForEmail(inputs.email)
-      }else {
-        throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL") )
-      }
+        if (user) {
+            await generateOTPForEmail(inputs.email)
+        } else {
+            throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL"))
+        }
 
-    }else {
+    } else {
         user = await User.findOne({
             phone: inputs.phone,
             countryCode: inputs.countryCode,
             isDeleted: false,
         })
-        if (user){
+        if (user) {
             await generateOTPForPhone(inputs.countryCode, inputs.phone)
-        }else {
+        } else {
             throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PHONE"))
         }
     }
     return user;
 }
 
+const updateProfile = async (inputs, user) => {
+    let user;
+    user = await User.findById({_id: user._id}).lean()
+
+    if(!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_USER"))
+
+    console.log("Avatar: ", req.file)
+    let avatar = req.file
+    if(!avatar) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_AVATAR"))
+
+    let upload = await uploadOnCloudinary(avatar.path)
+    if(!upload) throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("SERVER_ERROR"))
+
+
+    user = await User.findByIdAndUpdate({ _id: user._id }, inputs, {avatar: upload.url}).lean()
+
+    user = await User.findById({ _id: user._id }).lean()
+
+    return user;
+
+}
+
+const login = async (inputs) => {
+    let user;
+    if (Utils.isEmail(inputs.email)) {
+        user = await User.findOne({ email: inputs.email, isDeleted: false, isEmailVerify: true })
+    } else {
+        user = await User.findOne({ countryCode: inputs.countryCode, phone: inputs.phone, isDeleted: false, isPhoneVerify: true })
+    }
+
+    if (!user) {
+        throw new ApiError(BAD_REQUEST, i18n.__("INVALID_USER"))
+    } else {
+        let compare = await Utils.comparePasswordUsingBcrypt(inputs.password, user.password);
+        if (!compare) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PASSWORD"))
+
+
+        const { accessToken, refreshToken } = generateAccessAndRefreshToken(user._id)
+
+        user = await User.findByIdAndUpdate({ _id: user._id }, { refreshToken: refreshToken }).lean()
+
+        user = await User.findById({ _id: user._id }).lean()
+
+        user.accessToken = accessToken;
+        user.type = "Bearer";
+        user.refreshToken = refreshToken;
+    }
+    return user;
+
+}
+
+const forgetPassword = async (inputs) => {
+    let user;
+    if(Utils.isEmail(inputs.email)){
+        user = await User.findOne({
+            email: inputs.email,
+            isDeleted: false
+        });
+        if (!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL"))
+
+        await generateOTPForEmail(user.email);
+    }else {
+        let user = await User.findOne({
+            phone: inputs.phone,
+            countryCode: inputs.countryCode,
+            isDeleted: false
+        })
+
+        if(!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PHONE"))
+        
+        await generateOTPForPhone(user.countryCode, user.phone)
+    }
+}
+
+const getProfile = async (user) => {
+    let user = await User.findById({_id:user._id }).lean()
+    return user;
+}
+
+const logout  = async(user) => {
+    return await User.findOneAndUpdate({
+        _id: user._id,
+        isDeleted: false
+    }, {
+        $set: { refreshToken: undefined }
+    }, {
+        new: true
+    })
+}
+
 
 const UserServices = {
     signup,
     verifyOTP,
-    resendOTP
+    resendOTP,
+    updateProfile,
+    login,
+    getProfile,
+    forgetPassword,
+    logout
 }
 export default UserServices
