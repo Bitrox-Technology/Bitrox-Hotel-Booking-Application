@@ -40,11 +40,11 @@ const generateOTP = () => {
     return otpGenerator.generate(4, { lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false });
 }
 
-const generateAccessToken = async (user) => {
+const generateAccessToken = async (user, role) => {
     return jwt.sign({
         _id: user._id,
         email: user.email,
-        role: "USER"
+        role: role
     }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.ACCESS_TOKEN_EXPIRY })
 }
 

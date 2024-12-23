@@ -5,13 +5,7 @@ import { User } from "../validators/index.js"
 
 const Signup = async (req, res, next) => {
   try {
-
-    if (req.body.email) {
-      await User.validateSignupForEmail(req.body)
-    } else {
-      await User.validateSignupForPhone(req.body)
-    }
-
+    await User.validateSignupForEmail(req.body)
     let user = await UserServices.signup(req.body)
     return res.status(OK).json(new ApiResponse(OK, user, i18n.__("OTP_SEND_SUCCESS")))
   } catch (error) {
@@ -45,7 +39,7 @@ const ResendOTP = async(req, res, next) => {
 const UpdateProfile = async(req, res, next) => {
   try{
      await User.validateUpdateProfile(req.body);
-     let user = await UserServices.updateProfile(req.body)
+     let user = await UserServices.updateProfile(req.body, req.user)
      return res.status(OK).json(new ApiResponse(OK, user, i18n.__("PROFILE_UPDATE")))
   }catch(error){
     next(error)
@@ -92,6 +86,17 @@ const Logout = async(req, res, next) => {
 }
 
 
+const ResetPassword = async(req, res, next) => {
+  try {
+     await User.validateResetPassword(req.body)
+     let user = await UserServices.resetPassword(req.body, req.user)
+     return res.status(OK).json(new ApiResponse(OK, user, i18n.__("RESET_PASSWORD")))
+  } catch (error) {
+    next(error)
+  }
+}
+
+
 
 const UserControllers = {
   Signup,
@@ -101,7 +106,8 @@ const UserControllers = {
   Login,
   ForgetPassword,
   GetProfile,
-  Logout
+  Logout,
+  ResetPassword
 }
 
 export default UserControllers

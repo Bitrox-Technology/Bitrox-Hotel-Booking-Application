@@ -12,7 +12,14 @@ const AuthMiddleware = async (req, res, next) => {
         }
 
         const decordedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        let user = await User.findById(decordedToken?._id).lean()
+        let user;
+
+        if(decordedToken?.role == "ADMIN"){
+           user = await Admin.findById(decordedToken?._id).lean()
+        }else{
+            user = await User.findOne({_id: decordedToken?._id, isDeleted: false}).lean()
+        }
+
         if (!user) {
             throw new ApiError(BAD_REQUEST, i18n.__("INVALID_TOKEN"))
         }

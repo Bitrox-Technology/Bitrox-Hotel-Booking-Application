@@ -6,10 +6,7 @@ import { ApiError } from "./apiError.js";
 import { BAD_REQUEST } from "./responseCode.js";
 import { sendSMSTwilio } from "../services/smsService.js";
 
-
-
 const generateOTPForEmail = async(email) => {
-
     let otpCode = 1234;
     otpCode = Utils.generateOTP();
     try {
@@ -20,7 +17,6 @@ const generateOTPForEmail = async(email) => {
             expiredAt: moment().add(10, "minutes").toDate()
         }
         await  sendOtp(email, otpCode)
-
         let otp = await OTP.create(data)
         return otp
     } catch (error) {
