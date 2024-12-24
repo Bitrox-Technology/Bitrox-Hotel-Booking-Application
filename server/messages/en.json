@@ -5,8 +5,8 @@
     "INVALID_OTP": "Invalid OTP",
     "INVALID_PHONE": "Phone does't exist",
     "INVALID_EMAIL": "Email does't exist",
-    "INVALID_USER": "User does't exist",
     "INVALID_ADMIN": "Admin does't exist",
+    "INVALID_HOST": "Host does't exist",
     "INVALID_PASSWORD": "Password is invalid",
     "INVALID_REQUEST": "Auth token is missing",
     "INVALID_TOKEN": "Invalid token",
@@ -18,9 +18,12 @@
     "OTP_VERIFY": "OTP verify successfully",
     "OTP_RESEND": "OTP resend successfully",
     "PROFILE_UPDATE": "Profile update successfully",
+    "PROFILE_SETUP": "Profile setup successfully",
     "USER_LOGIN": "User login successfully",
-    "ADMIN_LOGIn": "Admin login successfully",
+    "ADMIN_LOGIN": "Admin login successfully",
+    "HOST_LOGIN": "Host login successfully",
     "USER_LOGOUT": "User logout successfully",
     "ADMIN_LOGOUT": "Admin logout successfully",
+    "HOST_LOGOUT": "Host logout successfully",
     "RESET_PASSWORD": "Password reset successfully"
 }

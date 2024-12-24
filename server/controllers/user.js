@@ -5,7 +5,7 @@ import { User } from "../validators/index.js"
 
 const Signup = async (req, res, next) => {
   try {
-    await User.validateSignupForEmail(req.body)
+    await User.validateSignup(req.body)
     let user = await UserServices.signup(req.body)
     return res.status(OK).json(new ApiResponse(OK, user, i18n.__("OTP_SEND_SUCCESS")))
   } catch (error) {

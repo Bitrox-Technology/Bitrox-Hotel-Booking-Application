@@ -1,8 +1,10 @@
-import { User } from "../models/index.js";
-import { ApiError } from "../utils/apiErrors.js"
+import User from "../models/user.js";
+import { ApiError } from "../utils/apiError.js"
 import { BAD_REQUEST, UN_AUTHORIZED } from "../utils/responseCode.js";
 import { i18n } from "../utils/i18n.js";
 import jwt from "jsonwebtoken"
+import Admin from "../models/admin.js";
+import Host from "../models/host.js";
 
 const AuthMiddleware = async (req, res, next) => {
     try {
@@ -16,6 +18,8 @@ const AuthMiddleware = async (req, res, next) => {
 
         if(decordedToken?.role == "ADMIN"){
            user = await Admin.findById(decordedToken?._id).lean()
+        }else if(decordedToken?.role == "HOST"){
+            user = await Host.findOne({_id: decordedToken?._id, isDeleted: false}).lean()
         }else{
             user = await User.findOne({_id: decordedToken?._id, isDeleted: false}).lean()
         }

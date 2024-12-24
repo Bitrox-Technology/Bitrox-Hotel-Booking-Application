@@ -35,4 +35,18 @@ const generateAccessAndRefreshTokenForAdmin = async (admin) => {
     }
 }
 
-export { generateAccessAndRefreshTokenForUser, generateAccessAndRefreshTokenForAdmin }
+const generateAccessAndRefreshTokenForHost = async (host) => {
+    try {
+        const existedhost = await User.findById(host._id)
+        const accessToken = await Utils.generateAccessToken(host, "HOST")
+        const refreshToken = await Utils.generateRefershToken(host)
+    
+        existeduser.refreshToken = refreshToken;
+        await existedhost.save({ validateBeforeSave: false })
+        return { accessToken, refreshToken };
+    } catch (err) {
+        throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("SERVER_ERROR"))
+    }
+}
+
+export { generateAccessAndRefreshTokenForUser, generateAccessAndRefreshTokenForAdmin, generateAccessAndRefreshTokenForHost }

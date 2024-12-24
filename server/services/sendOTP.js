@@ -33,3 +33,40 @@ const sendOtp = async (to, code) => {
 export {
     sendOtp
 };
+
+
+
+// import jwt from "jsonwebtoken";
+// import User from "../models/User"; // Adjust to your User model
+
+// const registerUser = async (req, res, next) => {
+//     try {
+//         const { email, password } = req.body;
+
+//         // Create a new user
+//         const user = new User({ email, password });
+//         await user.save();
+
+//         // Generate a unique verification token
+//         const token = jwt.sign({ userId: user._id }, process.env.VERIFICATION_SECRET, { expiresIn: "1d" });
+
+//         // Create the verification link
+//         const verificationLink = `${process.env.FRONTEND_URL}/verify-account?token=${token}`;
+
+//         // Send the email
+//         const subject = "Verify Your Account - Hotel Booking Website";
+//         const html = `
+//             <div>
+//                 <p>Thank you for registering!</p>
+//                 <p>Please click the link below to verify your account:</p>
+//                 <a href="${verificationLink}" style="color: #1a73e8; text-decoration: none;">Verify My Account</a>
+//                 <p>If you did not sign up, you can safely ignore this email.</p>
+//             </div>
+//         `;
+//         await sendEmail(email, subject, html);
+
+//         res.status(201).json({ message: "User registered! Please check your email to verify your account." });
+//     } catch (error) {
+//         next(error);
+//     }
+// };

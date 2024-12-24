@@ -113,7 +113,7 @@ const forgetPassword = async (inputs) => {
             isDeleted: false,
             isEmailVerify: true
         });
-        if (!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL"))
+        if (!admin) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL"))
 
         await generateOTPForEmail(user.email);
     }

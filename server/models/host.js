@@ -5,22 +5,47 @@ const hostSchema = new mongoose.Schema({
     lastName: { type: String, default: "", trim: true },
     email: { type: String, trim: true, default: "", unique: true },
     countryCode: { type: String, trim: true, default: "" },
-    phoneNumber: { type: String, trim: true, default: "" },
-    avtar: { type: String, trim: true },
+    phone: { type: String, trim: true, default: "" },
+    avatar: { type: String, trim: true },
+    role: {
+        type: String,
+        enum: ["HOST"],
+        default: "HOST",
+    },
     password: { type: String, select: false },
-    properties: [
+    address: {
+        line1: { type: String, trim: true },
+        line2: { type: String, trim: true },
+        city: { type: String, trim: true },
+        state: { type: String, trim: true },
+        country: { type: String, trim: true },
+        zipCode: { type: String, trim: true },
+    },
+    bankDetails: {
+        bankName: { type: String },
+        accountHolderName: { type: String },
+        brachName: { type: String },
+        bankCode: { type: String }
+    },
+    documents: [
         {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Property',
-        },
-    ],
-    earning: { type: Number, default: 0 },
-    booking: [
-        {
-            bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking' },
-            status: { type: String, enum: ["Pending", "Confirmed", "Cancelled"], default: "Pending" }
+            name: { type: String },
+            frontImage: { type: String },
+            backImage: { type: String },
+            expiryDate: { type: Date }
         }
     ],
+    accountStatus: {
+        type: String,
+        enum: ["Pending", "Verified", "Rejected"],
+        default: "Pending"
+    },
+    isProfileComplete: { type: Boolean, default: false },
+    isEmailVerify: { type: Boolean, default: false },
+    isPhoneVerify: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    refreshToken: { type: String, select: false }
+
 
 }, {
     timestamps: true,
