@@ -22,9 +22,9 @@ const adminSchema = new mongoose.Schema(
             type: String,
             select: false,
         },
-        permissions: {
-            type: String, default: ['manage_users', 'manage_hosts', 'manage_properties']
-        },
+        // permissions: {
+        //     type: String, default: ['manage_users', 'manage_hosts', 'manage_properties']
+        // },
         isEmailVerify: { type: Boolean, default: false },
         isPhoneVerify: { type: Boolean, default: false },
         isDeleted: { type: Boolean, default: false },

@@ -4,9 +4,11 @@ import AuthMiddleware from "../middlewares/auth.js"
 
 const adminRouter = Router()
 adminRouter.post("/signup", AdminControllers.Signup)
-adminRouter.post("/otp_verification", AdminControllers.VerifyOTP)
+adminRouter.post("/otp-verification", AdminControllers.VerifyOTP)
 adminRouter.post("/resend", AdminControllers.ResendOTP)
 adminRouter.post("/login", AdminControllers.Login)
+adminRouter.post("/forget-password", AdminControllers.ForgetPassword)
+
 
 adminRouter.get("/get-profile", AuthMiddleware, AdminControllers.GetProfile)
 adminRouter.post("/logout", AuthMiddleware, AdminControllers.Logout)

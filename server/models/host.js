@@ -44,7 +44,7 @@ const hostSchema = new mongoose.Schema({
     isEmailVerify: { type: Boolean, default: false },
     isPhoneVerify: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
-    refreshToken: { type: String, select: false }
+    refreshToken: { type: String, select:false }
 
 
 }, {

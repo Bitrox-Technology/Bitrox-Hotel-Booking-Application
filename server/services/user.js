@@ -1,16 +1,18 @@
-import User  from "../models/user.js";
+import User from "../models/user.js";
 import { ApiError } from "../utils/apiError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { generateOTPForEmail, generateOTPForPhone, verifyEmailOTP, verifyOtp } from "../utils/functions.js";
 import { generateAccessAndRefreshTokenForUser } from "../utils/generateTokens.js";
+import { i18n } from "../utils/i18n.js";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR } from "../utils/responseCode.js";
 import Utils from "../utils/utilities.js";
 
 const signup = async (inputs) => {
     let user;
-    if (Utils.comparePasswordAndConfirmpassword(inputs.password, inputs.confirmPassword) == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
-    inputs.password = await Utils.Hashed_Password(inputs.password)
     if (Utils.isEmail(inputs.email)) {
+        let compare = Utils.comparePasswordAndConfirmpassword(inputs.password, inputs.confirmPassword)
+        if (compare == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
+        inputs.password = await Utils.Hashed_Password(inputs.password)
         user = await User.findOne({
             email: inputs.email,
             isDeleted: false,
@@ -73,10 +75,10 @@ const verifyOTP = async (inputs) => {
             email: inputs.email,
             isDeleted: false
         })
-
+        if (!user) throw new ApiError(i18n.__("INVALID_EMAIL"))
         let otp = await verifyEmailOTP(inputs.email, inputs.otp)
 
-        if (!otp) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_OTP"))
+        if (otp === false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_OTP"))
         subObj.isEmailVerify = true
     } else {
         user = await User.findOne({
@@ -89,11 +91,11 @@ const verifyOTP = async (inputs) => {
 
         let otp = await verifyOtp(inputs.countryCode, inputs.phone, inputs.otp)
 
-        if (!otp) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_OTP"))
+        if (otp === false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_OTP"))
         subObj.isPhoneVerify = true
     }
 
-    const { accessToken, refreshToken } = generateAccessAndRefreshTokenForUser(user._id)
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokenForUser(user._id)
     subObj.refreshToken = refreshToken
     user = await User.findByIdAndUpdate({ _id: user._id }, subObj).lean()
 
@@ -129,60 +131,37 @@ const resendOTP = async (inputs) => {
             throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PHONE"))
         }
     }
-    return user;
 }
 
-const updateProfile = async (inputs, id, file) => {
-    let user;
-    user = await User.findById({ _id: id._id }).lean()
-
-    if (!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_USER"))
-
-    console.log("Avatar: ", file.file)
-    let avatar = file.file
-    if (!avatar) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_AVATAR"))
-
-    let upload = await uploadOnCloudinary(avatar.path)
-    if (!upload) throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("SERVER_ERROR"))
-
-
-    user = await User.findByIdAndUpdate({ _id: user._id }, inputs, { avatar: upload.url, isProfileComplete: true, profileCompleteAt: Date.now() }).lean()
-
-    user = await User.findById({ _id: user._id }).lean()
-
-    return user;
-
-}
 
 const login = async (inputs) => {
     let user;
     if (Utils.isEmail(inputs.email)) {
-        user = await User.findOne({ email: inputs.email, isDeleted: false, isEmailVerify: true })
-    } else {
-        user = await User.findOne({ countryCode: inputs.countryCode, phone: inputs.phone, isDeleted: false, isPhoneVerify: true })
-    }
-
-    if (!user) {
-        throw new ApiError(BAD_REQUEST, i18n.__("INVALID_USER"))
-    } else {
+        user = await User.findOne({ email: inputs.email, isDeleted: false, isEmailVerify: true }).select("+password")
+        if (!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_USER"))
         let compare = await Utils.comparePasswordUsingBcrypt(inputs.password, user.password);
         if (!compare) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PASSWORD"))
 
-        const { accessToken, refreshToken } = generateAccessAndRefreshTokenForUser(user._id)
+        const { accessToken, refreshToken } = await generateAccessAndRefreshTokenForUser(user._id)
         user = await User.findByIdAndUpdate({ _id: user._id }, { refreshToken: refreshToken }).lean()
         user = await User.findById({ _id: user._id }).lean()
 
         user.accessToken = accessToken;
         user.type = "Bearer";
         user.refreshToken = refreshToken;
-    }
-    return user;
+        return user
 
+    } else {
+        user = await User.findOne({ countryCode: inputs.countryCode, phone: inputs.phone, isDeleted: false, isPhoneVerify: true })
+        if (!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_USER"))
+        await generateOTPForPhone(inputs.countryCode, inputs.phone)
+    }
 }
 
 const forgetPassword = async (inputs) => {
     let user;
     if (Utils.isEmail(inputs.email)) {
+
         user = await User.findOne({
             email: inputs.email,
             isDeleted: false,
@@ -190,69 +169,82 @@ const forgetPassword = async (inputs) => {
         });
         if (!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL"))
 
+        let compare = Utils.comparePasswordAndConfirmpassword(inputs.newPassword, inputs.confirmPassword)
+        if (compare == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
+        inputs.newPassword = await Utils.Hashed_Password(inputs.newPassword)
+
+        user = await User.findByIdAndUpdate({ _id: user._id }, { password: inputs.newPassword })
+
         await generateOTPForEmail(user.email);
-    } else {
-        let user = await User.findOne({
-            phone: inputs.phone,
-            countryCode: inputs.countryCode,
-            isDeleted: false,
-            isPhoneVerify: true
-        })
-
-        if (!user) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PHONE"))
-
-        await generateOTPForPhone(user.countryCode, user.phone)
     }
 }
 
 const getProfile = async (user) => {
     return await User.findById({ _id: user._id }).lean();
-   
+
 }
 
 const logout = async (user) => {
-    return await User.findOneAndUpdate({
+    return await User.findByIdAndUpdate({
         _id: user._id,
         isDeleted: false
     }, {
-        $set: { refreshToken: undefined }
+        $set: { refreshToken: "" }
     }, {
         new: true
-    })
+    }).select("+refreshToken")
+
 }
 
-const resetPassword = async(inputs, id) => {
+const resetPassword = async (inputs, id) => {
     let user;
-    if (Utils.comparePasswordAndConfirmpassword(inputs.newPassword, inputs.confirmPassword) == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
+    let compare = Utils.comparePasswordAndConfirmpassword(inputs.newPassword, inputs.confirmPassword)
+    if (compare === false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
 
-    user = await User.findById({id: id._id}).lean()
+    user = await User.findById({ _id: id._id }).select("+password")
 
     let match = await Utils.comparePasswordUsingBcrypt(inputs.oldPassword, user.password)
 
-    if(!match) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PASSWORD"))
+    if (!match) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PASSWORD"))
 
-    let password = await Utils.Hashed_Password(inputs.password)
+    let password = await Utils.Hashed_Password(inputs.newPassword)
 
-    await User.findOneAndUpdate({id: id._id}, {$set: {password: password}}, {new: true})
+    await User.findOneAndUpdate({ _id: id._id }, { $set: { password: password } }, { new: true })
 
-    user = await User.findById({_id: id._id}).lean()
+    user = await User.findById({ _id: id._id }).lean()
 
     return user;
 
 }
 
 
+const updateProfile = async (inputs, id, files) => {
+    let user;
+    let avatar = files
+    if (!avatar) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_AVATAR"))
+
+    let upload = await uploadOnCloudinary(avatar.path)
+    if (!upload) throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("SERVER_ERROR"))
+
+    inputs.avatar = upload.url
+    user = await User.findByIdAndUpdate({ _id: id._id }, inputs)
+
+    user = await User.findById({ _id: user._id }).lean()
+
+    return user;
+
+}
+
 const UserServices = {
     signup,
     verifyOTP,
     resendOTP,
-    updateProfile,
     login,
     getProfile,
     forgetPassword,
     logout,
-    resetPassword
-    
+    resetPassword,
+    updateProfile
 
 }
 export default UserServices

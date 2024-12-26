@@ -1,5 +1,5 @@
 import moment from "moment";
-import { OTP } from "../models/otp.js";
+import OTP from "../models/otp.js";
 import Utils from "./utilities.js";
 import { sendOtp } from "../services/sendOTP.js";
 import { ApiError } from "./apiError.js";
@@ -16,7 +16,7 @@ const generateOTPForEmail = async(email) => {
             otp: otpCode,
             expiredAt: moment().add(10, "minutes").toDate()
         }
-        await  sendOtp(email, otpCode)
+        await sendOtp(email, otpCode)
         let otp = await OTP.create(data)
         return otp
     } catch (error) {
@@ -36,11 +36,11 @@ const generateOTPForPhone = async(countaryCode, phone) => {
             otp: otpCode,
             expiredAt: moment().add(10, "minutes").toDate()
         }
-        await sendSMSTwilio(countaryCode, phone, otpCode + " is  your hostel booking verification code. ")
+        await sendSMSTwilio(countaryCode, phone, otpCode + " is  your hotel booking verification code. ")
 
         let otp = await OTP.create(data)
         return otp
-    } catch (error) {
+    } catch (err) {
         throw new ApiError(BAD_REQUEST, err)
     }
 }
@@ -64,18 +64,18 @@ const verifyOtp = async (countryCode, data, otp) => {
             {countryCode, phone: phoneNumber, otp}
         ]
        })
-
        if (storedOTP) {
         await OTP.deleteOne({
             $or: [
               { email, otp },
-              { countryCode, mobileNumber, otp },
+              { countryCode, phoneNumber, otp },
             ],
           });
 
           return true;
        }
     }catch(err){
+        console.log(err)
         return false
     }
 

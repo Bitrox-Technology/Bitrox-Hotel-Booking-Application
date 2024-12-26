@@ -6,6 +6,7 @@ import cors from "cors"
 import { router } from "./routes/index.js"
 import connectDB from "./connection/db.js"
 import { i18n } from "./utils/i18n.js"
+import { ApiError } from "./utils/apiError.js"
 
 dotenv.config({
     path: './.env'
@@ -40,7 +41,6 @@ app.use(function (req, res, next) {
     }
     next();
 });
-
 
 app.use("/api/v1", router)
 

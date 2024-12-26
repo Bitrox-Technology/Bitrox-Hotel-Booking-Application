@@ -28,7 +28,7 @@ const isPhone = (value) => {
     return intRegex.test(value);
 }
 
-const comparePasswordAndConfirmpassword = async (password, confirmPassword) => {
+const comparePasswordAndConfirmpassword = (password, confirmPassword) => {
     if (password === confirmPassword) {
         return true;
     } else {

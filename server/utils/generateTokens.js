@@ -5,16 +5,17 @@ import { i18n } from "./i18n.js";
 import User from "../models/user.js";
 import Utils from "./utilities.js";
 import Admin from "../models/admin.js";
+import Host from "../models/host.js";
+
 
 const generateAccessAndRefreshTokenForUser = async (user) => {
     try {
         const existeduser = await User.findById(user._id)
         const accessToken = await Utils.generateAccessToken(user, "USER")
         const refreshToken = await Utils.generateRefershToken(user)
-    
         existeduser.refreshToken = refreshToken;
         await existeduser.save({ validateBeforeSave: false })
-        return { accessToken, refreshToken };
+        return {accessToken, refreshToken}
     } catch (err) {
         throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("SERVER_ERROR"))
     }
@@ -37,14 +38,14 @@ const generateAccessAndRefreshTokenForAdmin = async (admin) => {
 
 const generateAccessAndRefreshTokenForHost = async (host) => {
     try {
-        const existedhost = await User.findById(host._id)
+        const existedhost = await Host.findById(host._id)
         const accessToken = await Utils.generateAccessToken(host, "HOST")
         const refreshToken = await Utils.generateRefershToken(host)
     
-        existeduser.refreshToken = refreshToken;
         await existedhost.save({ validateBeforeSave: false })
         return { accessToken, refreshToken };
     } catch (err) {
+        console.log(err)
         throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("SERVER_ERROR"))
     }
 }

@@ -9,9 +9,9 @@ const validateSignup = async (inputs) => {
     schema = joi.object().keys({
         email: joi.string().email().optional(),
         countryCode: joi.string().optional(),
-        phoneNo: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional(),
-        password: joi.string().min(6).pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])')).required(),
-        confirmPassword: joi.string().required()
+        phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional(),
+        password: joi.string().min(6).pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])')).optional(),
+        confirmPassword: joi.string().optional()
     })
     try {
         await schema.validateAsync(inputs, { abortEarly: false });

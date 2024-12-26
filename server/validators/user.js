@@ -8,9 +8,9 @@ const validateSignup = async (inputs) => {
     schema = joi.object().keys({
         email: joi.string().email().optional(),
         countryCode: joi.string().optional(),
-        phoneNo: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional(),
-        password: joi.string().min(6).pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])')).required(),
-        confirmPassword: joi.string().required()
+        phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional(),
+        password: joi.string().min(6).pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])')).optional(),
+        confirmPassword: joi.string().optional()
     })
     try {
         await schema.validateAsync(inputs, { abortEarly: false });
@@ -45,6 +45,23 @@ const validateResendOTP = async (inputs) => {
        countryCode: joi.string().optional(),
        phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional()
 
+    })
+    try {
+        await schema.validateAsync(inputs, { abortEarly: false });
+    } catch (validationError) {
+        const errorMessage = validationError.details ? validationError.details.map(detail => detail.message).join(', ') : i18n.__('INVALID_CREDENTIALS');
+        throw new ApiError(BAD_REQUEST, errorMessage);
+    }
+}
+
+const validateforgetPassword = async (inputs) => {
+    let schema = {}
+    schema = joi.object().keys({
+       email: joi.string().email().optional(),
+       countryCode: joi.string().optional(),
+       phone: joi.string().pattern(/^[0-9\-\(\)\s]+$/).optional(),
+       newPassword: joi.string().min(6).pattern(new RegExp('^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])')).optional(),
+       confirmPassword: joi.string().optional(),
     })
     try {
         await schema.validateAsync(inputs, { abortEarly: false });
@@ -113,7 +130,8 @@ const User= {
     validateResendOTP,
     validateLogin,
     validateUpdateProfile,
-    validateResetPassword
+    validateResetPassword,
+    validateforgetPassword
 }
 export default User;
     

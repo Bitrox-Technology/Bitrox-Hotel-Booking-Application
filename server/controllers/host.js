@@ -1,5 +1,6 @@
 import HostServices from "../services/host.js"
 import { ApiResponse } from "../utils/apiResponse.js"
+import { i18n } from "../utils/i18n.js"
 import { OK } from "../utils/responseCode.js"
 import { Host } from "../validators/index.js"
 
@@ -41,7 +42,7 @@ const Login = async(req, res, next) => {
   try {
      await Host.validateLogin(req.body)
      let host = await HostServices.login(req.body)
-     return res.status(OK).json(new ApiResponse(OK, host, i18n.__("HOST_LOGIN")))
+     return res.status(OK).json(new ApiResponse(OK, host, i18n.__(host != undefined ?"HOST_LOGIN":"OTP_SEND_SUCCESS")))
   } catch (error) {
     next(error)
   }

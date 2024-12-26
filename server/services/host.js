@@ -9,9 +9,10 @@ import Utils from "../utils/utilities.js";
 
 const signup = async (inputs) => {
     let host;
-    if (Utils.comparePasswordAndConfirmpassword(inputs.password, inputs.confirmPassword) == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
-    inputs.password = await Utils.Hashed_Password(inputs.password)
     if (Utils.isEmail(inputs.email)) {
+        let compare = Utils.comparePasswordAndConfirmpassword(inputs.password, inputs.confirmPassword)
+        if (compare == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
+        inputs.password = await Utils.Hashed_Password(inputs.password)
         host = await Host.findOne({
             email: inputs.email,
             isDeleted: false,
@@ -22,7 +23,7 @@ const signup = async (inputs) => {
                 email: inputs.email, isDeleted: false
             })
             if (host) {
-                await User.deleteMany({
+                await Host.deleteMany({
                     email: inputs.email,
                     isDeleted: false,
                     isEmailVerify: false,
@@ -74,7 +75,7 @@ const verifyOTP = async (inputs) => {
             email: inputs.email,
             isDeleted: false
         })
-
+        if (!host) throw new ApiError(i18n.__("INVALID_EMAIL"))
         let otp = await verifyEmailOTP(inputs.email, inputs.otp)
 
         if (!otp) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_OTP"))
@@ -87,14 +88,13 @@ const verifyOTP = async (inputs) => {
         })
 
         if (!host) throw new ApiError(i18n.__("INVALID_PHONE"))
-
         let otp = await verifyOtp(inputs.countryCode, inputs.phone, inputs.otp)
 
         if (!otp) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_OTP"))
         subObj.isPhoneVerify = true
     }
 
-    const { accessToken, refreshToken } = generateAccessAndRefreshTokenForHost(host._id)
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokenForHost(host._id)
     subObj.refreshToken = refreshToken
     host = await Host.findByIdAndUpdate({ _id: host._id }, subObj).lean()
 
@@ -130,33 +130,31 @@ const resendOTP = async (inputs) => {
             throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PHONE"))
         }
     }
-    return host;
 }
 
 
 const login = async (inputs) => {
     let host;
     if (Utils.isEmail(inputs.email)) {
-        host = await Host.findOne({ email: inputs.email, isDeleted: false, isEmailVerify: true })
-    } else {
-        host = await Host.findOne({ countryCode: inputs.countryCode, phone: inputs.phone, isDeleted: false, isPhoneVerify: true })
-    }
+        host = await Host.findOne({ email: inputs.email, isDeleted: false, isEmailVerify: true }).select("+password")
+        if (!host) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_HOST"))
 
-    if (!host) {
-        throw new ApiError(BAD_REQUEST, i18n.__("INVALID_USER"))
-    } else {
         let compare = await Utils.comparePasswordUsingBcrypt(inputs.password, host.password);
         if (!compare) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PASSWORD"))
 
-        const { accessToken, refreshToken } = generateAccessAndRefreshTokenForHost(host._id)
+        const { accessToken, refreshToken } = await generateAccessAndRefreshTokenForHost(host._id)
         host = await Host.findByIdAndUpdate({ _id: host._id }, { refreshToken: refreshToken }).lean()
         host = await Host.findById({ _id: host._id }).lean()
 
         host.accessToken = accessToken;
         host.type = "Bearer";
         host.refreshToken = refreshToken;
+        return host
+    } else {
+        host = await Host.findOne({ countryCode: inputs.countryCode, phone: inputs.phone, isDeleted: false, isPhoneVerify: true })
+        if (!host) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_HOST"))
+        await generateOTPForPhone(inputs.countryCode, inputs.phone)
     }
-    return host;
 
 }
 
@@ -170,24 +168,19 @@ const forgetPassword = async (inputs) => {
         });
         if (!host) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_EMAIL"))
 
-        await generateOTPForEmail(user.email);
-    } else {
-        let host = await Host.findOne({
-            phone: inputs.phone,
-            countryCode: inputs.countryCode,
-            isDeleted: false,
-            isPhoneVerify: true
-        })
+        let compare = Utils.comparePasswordAndConfirmpassword(inputs.newPassword, inputs.confirmPassword)
+        if (compare == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
+        inputs.newPassword = await Utils.Hashed_Password(inputs.newPassword)
 
-        if (!host) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PHONE"))
+        host = await Host.findByIdAndUpdate({ _id: host._id }, { password: inputs.newPassword })
 
-        await generateOTPForPhone(user.countryCode, user.phone)
+        await generateOTPForEmail(host.email);
     }
 }
 
 const getProfile = async (host) => {
     return await Host.findById({ _id: host._id }).lean();
-   
+
 }
 
 const logout = async (host) => {
@@ -195,52 +188,52 @@ const logout = async (host) => {
         _id: host._id,
         isDeleted: false
     }, {
-        $set: { refreshToken: undefined }
+        $set: { refreshToken: "" }
     }, {
         new: true
-    })
+    }).select("+refreshToken")
 }
 
-const resetPassword = async(inputs, id) => {
+const resetPassword = async (inputs, id) => {
     let host;
-    if (Utils.comparePasswordAndConfirmpassword(inputs.newPassword, inputs.confirmPassword) == false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
+    let compare = Utils.comparePasswordAndConfirmpassword(inputs.newPassword, inputs.confirmPassword)
+    if (compare === false) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_CREDENTIALS"))
 
-    host = await Host.findById({id: id._id}).lean()
+    host = await Host.findById({ _id: id._id }).select("+password")
 
     let match = await Utils.comparePasswordUsingBcrypt(inputs.oldPassword, host.password)
 
-    if(!match) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PASSWORD"))
+    if (!match) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_PASSWORD"))
 
-    let password = await Utils.Hashed_Password(inputs.password)
+    let password = await Utils.Hashed_Password(inputs.newPassword)
 
-    await Host.findOneAndUpdate({id: id._id}, {$set: {password: password}}, {new: true})
+    await Host.findOneAndUpdate({ _id: id._id }, { $set: { password: password } }, { new: true })
 
-    host = await Host.findById({_id: id._id}).lean()
+    host = await Host.findById({ _id: id._id }).lean()
 
     return host;
 
 }
 
-
-const profileSetup = async(inputs, id, files) => {
+const profileSetup = async (inputs, id, files) => {
     let host, frontImageUrl, backImageUrl, avatarUrl
-    const { frontImage, backImage, avatar} = files
+    const { frontImage, backImage, avatar } = files
     host = await Host.findById(id._id).lean()
     if (!host) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_HOST"))
-    if (frontImage && backImage && avatar){
+    if (frontImage && backImage && avatar) {
         frontImageUrl = await uploadOnCloudinary(frontImage[0].path)
         backImageUrl = await uploadOnCloudinary(backImage[0].path)
         avatarUrl = await uploadOnCloudinary(backImage[0].path)
     }
 
     if (!frontImageUrl && !backImageUrl && !avatar) throw new ApiError(INTERNAL_SERVER_ERROR, "SERVER_ERROR")
-    
+
     let documents = {
         name: inputs.documents[0].name,
         frontImage: frontImageUrl.url,
-        backImage: backImageUrl.url ,
+        backImage: backImageUrl.url,
     }
-    host = await Host.findByIdAndUpdate({ _id: host._id}, {
+    host = await Host.findByIdAndUpdate({ _id: host._id }, {
         firstName: firstName || inputs.firstName,
         lastName: lastName || inputs.lastName,
         phone: phone || inputs.phone,
@@ -249,15 +242,6 @@ const profileSetup = async(inputs, id, files) => {
         bankDetails: bankDetails || inputs.bankDetails,
         avatar: avatar || avatarUrl.url
     })
-    
-
-
-   
-
-
-
-
-
 
 
 }
@@ -272,6 +256,6 @@ const HostServices = {
     logout,
     resetPassword,
     profileSetup
-    
+
 }
 export default HostServices
