@@ -1,7 +1,7 @@
 import multer from "multer";
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = ["image/jpeg", "image/png"];
+    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
     if (!allowedTypes.includes(file.mimetype)) {
         cb(new Error("Only JPEG and PNG files are allowed."), false);
     } else {

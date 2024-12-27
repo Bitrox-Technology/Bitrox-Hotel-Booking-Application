@@ -1,6 +1,7 @@
 import Host from "../models/host.js";
+import Property from "../models/property.js";
 import { ApiError } from "../utils/apiError.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadMutliImageOnCloudinary } from "../utils/cloudinary.js";
 import { generateOTPForEmail, generateOTPForPhone, verifyEmailOTP, verifyOtp } from "../utils/functions.js";
 import { generateAccessAndRefreshTokenForHost } from "../utils/generateTokens.js";
 import { i18n } from "../utils/i18n.js";
@@ -216,34 +217,113 @@ const resetPassword = async (inputs, id) => {
 }
 
 const profileSetup = async (inputs, id, files) => {
-    let host, frontImageUrl, backImageUrl, avatarUrl
-    const { frontImage, backImage, avatar } = files
-    host = await Host.findById(id._id).lean()
-    if (!host) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_HOST"))
-    if (frontImage && backImage && avatar) {
-        frontImageUrl = await uploadOnCloudinary(frontImage[0].path)
-        backImageUrl = await uploadOnCloudinary(backImage[0].path)
-        avatarUrl = await uploadOnCloudinary(backImage[0].path)
+    // Extract files
+    const frontImages = files['frontImage'] || [];
+    const backImages = files['backImage'] || [];
+    const avatar = files['avatar'] ? files['avatar'][0] : null; // Expecting only one avatar file
+
+    // Validate document counts
+    if (
+        !inputs.documents ||
+        frontImages.length !== backImages.length ||
+        frontImages.length !== inputs.documents.length
+    ) {
+        throw new ApiError(BAD_REQUEST, i18n.__("INVALID_DATA"));
     }
 
-    if (!frontImageUrl && !backImageUrl && !avatar) throw new ApiError(INTERNAL_SERVER_ERROR, "SERVER_ERROR")
-
-    let documents = {
-        name: inputs.documents[0].name,
-        frontImage: frontImageUrl.url,
-        backImage: backImageUrl.url,
+    // Upload avatar
+    let uploadAvatar;
+    if (avatar) {
+        uploadAvatar = await uploadMutliImageOnCloudinary(avatar.path, {
+            resource_type: "image",
+            folder: "host_avatars",
+        });
+        if (!uploadAvatar) {
+            throw new ApiError(INTERNAL_SERVER_ERROR, "Avatar upload failed");
+        }
     }
-    host = await Host.findByIdAndUpdate({ _id: host._id }, {
-        firstName: firstName || inputs.firstName,
-        lastName: lastName || inputs.lastName,
-        phone: phone || inputs.phone,
-        email: email || inputs.email,
-        address: address || inputs.address,
-        bankDetails: bankDetails || inputs.bankDetails,
-        avatar: avatar || avatarUrl.url
-    })
+
+    // Upload documents
+    const uploadDocuments = await Promise.all(
+        inputs.documents.map(async (doc, index) => {
+            const frontImageUpload = await uploadMutliImageOnCloudinary(frontImages[index].path, {
+                resource_type: "image",
+                folder: "host_documents",
+            });
+
+            const backImageUpload = await uploadMutliImageOnCloudinary(backImages[index].path, {
+                resource_type: "image",
+                folder: "host_documents",
+            });
+
+            if (!frontImageUpload || !backImageUpload) {
+                throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("FAILED_UPLOAD"));
+            }
+
+            return {
+                name: doc.name,
+                frontImage: frontImageUpload.secure_url,
+                backImage: backImageUpload.secure_url,
+                expiryDate: doc.expiryDate ? new Date(doc.expiryDate) : null,
+            };
+        })
+    );
+
+    // Prepare host data
+    const hostData = {
+        firstName: inputs.firstName,
+        lastName: inputs.lastName,
+        email: inputs.email,
+        countryCode: inputs.countryCode,
+        phone: inputs.phone,
+        avatar: uploadAvatar?.secure_url,
+        address: inputs.address,
+        bankDetails: inputs.bankDetails,
+        documents: uploadDocuments,
+    };
+
+    // Update host in the database
+    const host = await Host.findByIdAndUpdate({ _id: id._id }, hostData, { new: true }).lean();
+
+    return host;
+};
 
 
+const addProperty = async (inputs, id, files) => {
+    let host
+    let images = files['images'] || [];
+    if (!images) throw new ApiError(BAD_REQUEST, i18n.__("INVALID_DATA"))
+
+    let uploadImages = await Promise.all(
+        images.map(async (image) => {
+            let imagesUpload = await uploadMutliImageOnCloudinary(image.path, {
+                resource_type: "image",
+                folder: "host_property",
+            });
+
+            if (!imagesUpload ) {
+                throw new ApiError(INTERNAL_SERVER_ERROR, i18n.__("FAILED_UPLOAD"));
+            }
+
+            return imagesUpload.secure_url
+        })
+    );
+
+    let propertyData = {
+        hostId: id._id,
+        title: inputs.title,
+        description: inputs.description,
+        propertyType: inputs.propertyType,
+        images: uploadImages,
+        location: inputs.location,
+        amenities: inputs.amenities,
+        pricing: inputs.pricing,
+        status: inputs.status || "Available"
+    }
+
+    host = await Property.create(propertyData)
+
+    return host
 }
 
 const HostServices = {
@@ -255,7 +335,8 @@ const HostServices = {
     forgetPassword,
     logout,
     resetPassword,
-    profileSetup
+    profileSetup,
+    addProperty
 
 }
 export default HostServices

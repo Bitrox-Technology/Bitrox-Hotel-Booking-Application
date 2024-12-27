@@ -26,4 +26,36 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 }
 
-export { uploadOnCloudinary }
+const uploadMutliImageOnCloudinary = async(localFilePath, options = {}) => {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+
+  try {
+    if (!localFilePath) return null;
+    // Upload the file on cloudinary
+    const response = await cloudinary.uploader.upload(localFilePath, {
+      resource_type: "auto",
+      ...options
+    })
+    fs.unlinkSync(localFilePath)
+    return response
+  } catch (error) {
+    if (fs.existsSync(localFilePath)) {
+      console.error("Error uploading to Cloudinary:", error.message);
+      try {
+        fs.unlinkSync(localFilePath);
+      } catch (unlinkError) {
+        console.error("Error removing local file:", unlinkError.message);
+      }
+    }
+    return null
+  }
+}
+
+export { 
+  uploadOnCloudinary, 
+  uploadMutliImageOnCloudinary 
+}

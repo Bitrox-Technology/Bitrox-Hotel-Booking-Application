@@ -24,7 +24,7 @@ const hostSchema = new mongoose.Schema({
     bankDetails: {
         bankName: { type: String },
         accountHolderName: { type: String },
-        brachName: { type: String },
+        branchName: { type: String },
         bankCode: { type: String }
     },
     documents: [
@@ -45,7 +45,6 @@ const hostSchema = new mongoose.Schema({
     isPhoneVerify: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     refreshToken: { type: String, select:false }
-
 
 }, {
     timestamps: true,

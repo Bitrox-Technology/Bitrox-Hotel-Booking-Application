@@ -12,7 +12,12 @@
 	"INVALID_REQUEST": "Auth token is missing",
 	"INVALID_TOKEN": "Invalid token",
 	"INVALID_AVATAR": "Invalid avatar",
+	"INVALID_DATA": "Improper document data",
 	"SERVER_ERROR": "Server Error",
+     
+	"FAILED_UPLOAD": "Document upload failed",
+
+	
 	"OTP_SEND_SUCCESS": "OTP sent successfully",
 	"OTP_VERIFY": "OTP verify successfully",
 	"OTP_RESEND": "OTP resend successfully",
@@ -25,5 +30,7 @@
 	"ADMIN_LOGOUT": "Admin logout successfully",
 	"HOST_LOGOUT": "Host logout successfully",
 	"RESET_PASSWORD": "Password reset successfully",
-	"PROFILE_FETCHED": "Profile Fetched successfully"
+	"PROFILE_FETCHED": "Profile Fetched successfully",
+	"PROPERTY_ADDED": "Property added successfully"
+
 }
